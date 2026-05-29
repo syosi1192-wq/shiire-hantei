@@ -175,6 +175,8 @@ export default function ResearchPhase({ onJudge }: Props) {
   const [mercariAnalysisLoading, setMercariAnalysisLoading] = useState(false);
   const [mercariAnalysisError, setMercariAnalysisError] = useState("");
   const [mercariAnalysisResult, setMercariAnalysisResult] = useState<MercariAnalysisResult | null>(null);
+  const [mercariSuggestLoading, setMercariSuggestLoading] = useState(false);
+  const [mercariSuggestError, setMercariSuggestError] = useState("");
 
   const sourcingRef = useRef<HTMLDivElement>(null);
 
@@ -373,6 +375,37 @@ export default function ResearchPhase({ onJudge }: Props) {
       setMercariAnalysisError("通信エラーが発生しました");
     } finally {
       setMercariAnalysisLoading(false);
+    }
+  };
+
+  // ── メルカリ AI 3件自動ピックアップ ──────────────
+  const handleMercariSuggest = async () => {
+    setMercariSuggestLoading(true);
+    setMercariSuggestError("");
+    try {
+      const r = await fetch("/api/mercari-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brand, category, modelNumber }),
+      });
+      const data = await r.json();
+      if (data.error) {
+        setMercariSuggestError(data.error);
+      } else {
+        const suggestions: Array<{ name: string; estimatedPrice: number }> =
+          data.suggestions ?? [];
+        const next = Array.from({ length: 5 }, (_, i) => ({
+          name: suggestions[i]?.name ?? "",
+          price: suggestions[i]?.estimatedPrice
+            ? String(suggestions[i].estimatedPrice)
+            : "",
+        }));
+        setMercariManualEntries(next);
+      }
+    } catch {
+      setMercariSuggestError("通信エラーが発生しました");
+    } finally {
+      setMercariSuggestLoading(false);
     }
   };
 
@@ -582,6 +615,29 @@ export default function ResearchPhase({ onJudge }: Props) {
                         </ol>
                         <p className="text-indigo-600">※ 価格は任意です。商品名だけでも分析できます</p>
                       </div>
+                      {/* AIが3件自動ピックアップ */}
+                      <button
+                        type="button"
+                        onClick={handleMercariSuggest}
+                        disabled={mercariSuggestLoading}
+                        className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        {mercariSuggestLoading ? (
+                          <>
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            AIが考え中...
+                          </>
+                        ) : (
+                          "✨ AIが売れ筋3件を自動入力する"
+                        )}
+                      </button>
+                      {mercariSuggestError && (
+                        <p className="text-xs text-red-600">⚠️ {mercariSuggestError}</p>
+                      )}
+                      <p className="text-xs text-slate-400 text-center -mt-1">
+                        入力された内容は自由に修正できます
+                      </p>
+
                       <div className="space-y-2">
                         {mercariManualEntries.map((entry, i) => (
                           <div key={i} className="flex items-center gap-2">
