@@ -167,7 +167,11 @@ export default function ResearchPhase({ onJudge }: Props) {
 
   // Mercari AI analysis state
   const [mercariAnalysisOpen, setMercariAnalysisOpen] = useState(false);
+  const [mercariInputMode, setMercariInputMode] = useState<"paste" | "manual">("paste");
   const [mercariPasteText, setMercariPasteText] = useState("");
+  const [mercariManualEntries, setMercariManualEntries] = useState(
+    Array.from({ length: 5 }, () => ({ name: "", price: "" }))
+  );
   const [mercariAnalysisLoading, setMercariAnalysisLoading] = useState(false);
   const [mercariAnalysisError, setMercariAnalysisError] = useState("");
   const [mercariAnalysisResult, setMercariAnalysisResult] = useState<MercariAnalysisResult | null>(null);
@@ -177,6 +181,10 @@ export default function ResearchPhase({ onJudge }: Props) {
   const baseKeyword = [brand, category, modelNumber].filter(Boolean).join(" ").trim();
   const canSearch = brand.trim() !== "";
   const hasPriceRange = priceMin > 0 && priceMax >= priceMin;
+  const canAnalyze =
+    mercariInputMode === "paste"
+      ? mercariPasteText.trim().length > 0
+      : mercariManualEntries.some((e) => e.name.trim().length > 0);
   const estimatedPrice = hasPriceRange ? Math.round((priceMin + priceMax) / 2) : 0;
 
   // 仕入れ上限額の計算: メルカリ価格 × 0.9（手数料10%控除）− 1,000円（送料）
@@ -332,7 +340,20 @@ export default function ResearchPhase({ onJudge }: Props) {
 
   // ── メルカリ AI 売れ筋分析 ─────────────────
   const handleMercariAnalyze = async () => {
-    if (!mercariPasteText.trim()) return;
+    let textToAnalyze = "";
+    if (mercariInputMode === "paste") {
+      if (!mercariPasteText.trim()) return;
+      textToAnalyze = mercariPasteText;
+    } else {
+      const validEntries = mercariManualEntries.filter((e) => e.name.trim());
+      if (validEntries.length === 0) return;
+      textToAnalyze = validEntries
+        .map(
+          (e, i) =>
+            `${i + 1}. ${e.name.trim()}${e.price.trim() ? ` ¥${e.price.trim()}` : ""}`
+        )
+        .join("\n");
+    }
     setMercariAnalysisLoading(true);
     setMercariAnalysisError("");
     setMercariAnalysisResult(null);
@@ -340,7 +361,7 @@ export default function ResearchPhase({ onJudge }: Props) {
       const r = await fetch("/api/mercari-analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: mercariPasteText, keyword: baseKeyword }),
+        body: JSON.stringify({ text: textToAnalyze, keyword: baseKeyword }),
       });
       const data = await r.json();
       if (data.error) {
@@ -504,27 +525,102 @@ export default function ResearchPhase({ onJudge }: Props) {
 
               {mercariAnalysisOpen && (
                 <div className="p-4 space-y-3 bg-white">
-                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2.5 text-xs text-indigo-800 space-y-1.5">
-                    <p className="font-semibold">📋 使い方</p>
-                    <ol className="list-decimal list-inside space-y-1 text-indigo-700">
-                      <li>上の「メルカリで取引実績を確認」ボタンでメルカリを開く</li>
-                      <li>メルカリのページで <strong>Ctrl+A</strong>（全選択）→ <strong>Ctrl+C</strong>（コピー）</li>
-                      <li>下のテキストエリアに <strong>Ctrl+V</strong> で貼り付ける</li>
-                      <li>「AIで売れ筋を分析」ボタンを押す</li>
-                    </ol>
+                  {/* モード切り替えタブ */}
+                  <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+                    <button
+                      type="button"
+                      onClick={() => setMercariInputMode("paste")}
+                      className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+                        mercariInputMode === "paste"
+                          ? "bg-white text-indigo-700 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      💻 コピペ（PC向け）
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMercariInputMode("manual")}
+                      className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+                        mercariInputMode === "manual"
+                          ? "bg-white text-indigo-700 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      📱 手入力（スマホ向け）
+                    </button>
                   </div>
 
-                  <textarea
-                    value={mercariPasteText}
-                    onChange={(e) => setMercariPasteText(e.target.value)}
-                    placeholder="メルカリの売り切れページをCtrl+A → Ctrl+Cでコピーして、ここにCtrl+Vで貼り付けてください..."
-                    rows={6}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white resize-y"
-                  />
+                  {mercariInputMode === "paste" ? (
+                    <>
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2.5 text-xs text-indigo-800 space-y-1.5">
+                        <p className="font-semibold">📋 使い方（PC）</p>
+                        <ol className="list-decimal list-inside space-y-1 text-indigo-700">
+                          <li>上の「メルカリで取引実績を確認」ボタンでメルカリを開く</li>
+                          <li>メルカリのページで <strong>Ctrl+A</strong>（全選択）→ <strong>Ctrl+C</strong>（コピー）</li>
+                          <li>下のテキストエリアに <strong>Ctrl+V</strong> で貼り付ける</li>
+                          <li>「AIで売れ筋を分析」ボタンを押す</li>
+                        </ol>
+                      </div>
+                      <textarea
+                        value={mercariPasteText}
+                        onChange={(e) => setMercariPasteText(e.target.value)}
+                        placeholder="メルカリの売り切れページをCtrl+A → Ctrl+Cでコピーして、ここにCtrl+Vで貼り付けてください..."
+                        rows={6}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white resize-y"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2.5 text-xs text-indigo-800 space-y-1.5">
+                        <p className="font-semibold">📋 使い方（スマホ）</p>
+                        <ol className="list-decimal list-inside space-y-1 text-indigo-700">
+                          <li>上の「メルカリで取引実績を確認」ボタンでメルカリを開く</li>
+                          <li>売れていた商品の名前と価格を確認する</li>
+                          <li>このアプリに戻り、下のフォームに入力する</li>
+                          <li>「AIで売れ筋を分析」ボタンを押す</li>
+                        </ol>
+                        <p className="text-indigo-600">※ 価格は任意です。商品名だけでも分析できます</p>
+                      </div>
+                      <div className="space-y-2">
+                        {mercariManualEntries.map((entry, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 w-4 flex-shrink-0 text-right">{i + 1}.</span>
+                            <input
+                              type="text"
+                              value={entry.name}
+                              onChange={(e) => {
+                                const next = [...mercariManualEntries];
+                                next[i] = { ...next[i], name: e.target.value };
+                                setMercariManualEntries(next);
+                              }}
+                              placeholder="商品名（例：コーチ トートバッグ）"
+                              className="flex-1 px-2.5 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                            />
+                            <div className="relative w-24 flex-shrink-0">
+                              <input
+                                type="number"
+                                value={entry.price}
+                                onChange={(e) => {
+                                  const next = [...mercariManualEntries];
+                                  next[i] = { ...next[i], price: e.target.value };
+                                  setMercariManualEntries(next);
+                                }}
+                                placeholder="価格"
+                                min={0}
+                                className="w-full pl-2 pr-6 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">円</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
 
                   <button
                     onClick={handleMercariAnalyze}
-                    disabled={!mercariPasteText.trim() || mercariAnalysisLoading}
+                    disabled={!canAnalyze || mercariAnalysisLoading}
                     className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
                   >
                     {mercariAnalysisLoading ? (
@@ -1090,7 +1186,9 @@ export default function ResearchPhase({ onJudge }: Props) {
           setYahooCondition("");
           setActiveRecSellPrice(0);
           setMercariAnalysisOpen(false);
+          setMercariInputMode("paste");
           setMercariPasteText("");
+          setMercariManualEntries(Array.from({ length: 5 }, () => ({ name: "", price: "" })));
           setMercariAnalysisResult(null);
           setMercariAnalysisError("");
         }}
