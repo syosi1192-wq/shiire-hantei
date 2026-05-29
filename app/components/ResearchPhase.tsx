@@ -543,6 +543,19 @@ export default function ResearchPhase({ onJudge }: Props) {
                 ※ メルカリは日付範囲での絞り込みURLに対応していないため、
                 目視で直近の取引（表示日付が古くなるまで）をご確認ください
               </p>
+              <div className="mt-2 pt-2 border-t border-amber-300">
+                <p className="font-semibold mb-1">📱 スマホで販売中の商品も表示される場合</p>
+                <p className="text-amber-700 mb-1">
+                  メルカリアプリで開くとフィルターがリセットされることがあります。
+                  下記の手順で「売り切れ」に絞り込んでください。
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-amber-700">
+                  <li>メルカリの検索結果画面で <strong>「絞り込み」</strong> をタップ</li>
+                  <li><strong>「販売状況」</strong> を選択</li>
+                  <li><strong>「売り切れ」</strong> にチェックを入れる</li>
+                  <li><strong>「完了」</strong> または <strong>「適用」</strong> をタップ</li>
+                </ol>
+              </div>
             </div>
 
             {/* ── メルカリ AI 売れ筋分析パネル ── */}
