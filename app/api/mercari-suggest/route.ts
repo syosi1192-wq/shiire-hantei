@@ -18,11 +18,16 @@ export async function POST(request: NextRequest) {
 カテゴリ: ${category || "指定なし"}
 型番・品番: ${modelNumber || "指定なし"}
 
-このブランド・カテゴリで、現在メルカリで売れている可能性が高い商品を3件ピックアップしてください。
+このブランド・カテゴリで、現在メルカリで売れている可能性が高い商品を8件ピックアップしてください。
 
 以下のJSON形式のみで返してください（説明文・コードブロック不要）:
 {
   "suggestions": [
+    { "name": "商品名", "estimatedPrice": 推定販売価格（整数）},
+    { "name": "商品名", "estimatedPrice": 推定販売価格（整数）},
+    { "name": "商品名", "estimatedPrice": 推定販売価格（整数）},
+    { "name": "商品名", "estimatedPrice": 推定販売価格（整数）},
+    { "name": "商品名", "estimatedPrice": 推定販売価格（整数）},
     { "name": "商品名", "estimatedPrice": 推定販売価格（整数）},
     { "name": "商品名", "estimatedPrice": 推定販売価格（整数）},
     { "name": "商品名", "estimatedPrice": 推定販売価格（整数）}
@@ -33,7 +38,8 @@ export async function POST(request: NextRequest) {
 - nameは「${brand} ＋ 商品種類 ＋ 特徴（色・素材・型番等）」の形式で日本語
 - estimatedPriceはメルカリでの売り切れ実績の中央値（円）
 - 需要が高く取引が多い商品を優先する
-- 型番・品番が指定されている場合はその商品を中心に提案する`;
+- 型番・品番が指定されている場合はその商品を中心に提案する
+- 必ず8件返すこと`;
 
   try {
     const response = await client.messages.create({

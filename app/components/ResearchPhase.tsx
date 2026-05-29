@@ -170,7 +170,7 @@ export default function ResearchPhase({ onJudge }: Props) {
   const [mercariInputMode, setMercariInputMode] = useState<"paste" | "manual">("paste");
   const [mercariPasteText, setMercariPasteText] = useState("");
   const [mercariManualEntries, setMercariManualEntries] = useState(
-    Array.from({ length: 5 }, () => ({ name: "", price: "" }))
+    Array.from({ length: 8 }, () => ({ name: "", price: "" }))
   );
   const [mercariAnalysisLoading, setMercariAnalysisLoading] = useState(false);
   const [mercariAnalysisError, setMercariAnalysisError] = useState("");
@@ -394,7 +394,7 @@ export default function ResearchPhase({ onJudge }: Props) {
       } else {
         const suggestions: Array<{ name: string; estimatedPrice: number }> =
           data.suggestions ?? [];
-        const next = Array.from({ length: 5 }, (_, i) => ({
+        const next = Array.from({ length: 8 }, (_, i) => ({
           name: suggestions[i]?.name ?? "",
           price: suggestions[i]?.estimatedPrice
             ? String(suggestions[i].estimatedPrice)
@@ -1257,7 +1257,7 @@ export default function ResearchPhase({ onJudge }: Props) {
           setMercariAnalysisOpen(false);
           setMercariInputMode("paste");
           setMercariPasteText("");
-          setMercariManualEntries(Array.from({ length: 5 }, () => ({ name: "", price: "" })));
+          setMercariManualEntries(Array.from({ length: 8 }, () => ({ name: "", price: "" })));
           setMercariAnalysisResult(null);
           setMercariAnalysisError("");
         }}
