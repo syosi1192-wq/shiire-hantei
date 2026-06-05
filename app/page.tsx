@@ -8,10 +8,21 @@ import { HistoryItem } from "./types";
 
 const HISTORY_KEY = "shiire_hantei_history";
 
+export interface RestoreValues {
+  brand: string;
+  category: string;
+  modelNumber: string;
+  priceMin: number;
+  priceMax: number;
+  targetMarginRate: number;
+}
+
 export default function Home() {
   const [phase, setPhase] = useState<"research" | "judgement">("research");
   const [judgeParams, setJudgeParams] = useState<JudgeParams | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [restoreValues, setRestoreValues] = useState<RestoreValues | null>(null);
+  const [restoreCount, setRestoreCount] = useState(0);
 
   useEffect(() => {
     try {
@@ -38,6 +49,20 @@ export default function Home() {
   };
 
   const handleBack = () => {
+    setPhase("research");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleRestore = (item: HistoryItem) => {
+    setRestoreValues({
+      brand: item.brand,
+      category: item.category ?? "",
+      modelNumber: item.modelNumber ?? "",
+      priceMin: item.priceMin ?? 0,
+      priceMax: item.priceMax ?? 0,
+      targetMarginRate: item.targetMarginRate ?? 20,
+    });
+    setRestoreCount((c) => c + 1);
     setPhase("research");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -76,7 +101,11 @@ export default function Home() {
       <main className="max-w-lg mx-auto px-4 py-5">
         {/* ResearchPhaseは常にマウントしたままにして入力状態を保持する */}
         <div className={phase === "research" ? "" : "hidden"}>
-          <ResearchPhase onJudge={handleJudge} />
+          <ResearchPhase
+            onJudge={handleJudge}
+            restoreValues={restoreValues}
+            restoreCount={restoreCount}
+          />
         </div>
 
         {judgeParams && (
@@ -89,7 +118,11 @@ export default function Home() {
           </div>
         )}
 
-        <HistoryList history={history} onClear={() => saveHistory([])} />
+        <HistoryList
+          history={history}
+          onClear={() => saveHistory([])}
+          onRestore={handleRestore}
+        />
       </main>
 
       <footer className="mt-8 pb-8 text-center text-xs text-stone-400 border-t border-stone-200 pt-6">

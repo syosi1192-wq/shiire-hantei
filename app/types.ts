@@ -29,7 +29,11 @@ export interface HistoryItem {
   timestamp: string;
   brand: string;
   category: string;
+  modelNumber?: string;
+  priceMin?: number;
+  priceMax?: number;
   purchasePrice: number;
+  targetMarginRate?: number;
   judgement: JudgementResult;
   marginRate: number;
   netProfit: number;

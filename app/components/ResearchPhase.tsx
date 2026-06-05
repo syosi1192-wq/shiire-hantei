@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SearchConditions, YahooAuctionItem, Recommendation } from "../types";
+import { RestoreValues } from "../page";
 import ProductRecommendations from "./ProductRecommendations";
 import ImageSearchPanel from "./ImageSearchPanel";
 
@@ -32,6 +33,8 @@ interface MercariAnalysisResult {
 
 interface Props {
   onJudge: (params: JudgeParams) => void;
+  restoreValues?: RestoreValues | null;
+  restoreCount?: number;
 }
 
 /**
@@ -131,7 +134,7 @@ function timeLeft(endTimeStr: string): string {
   return `残り${Math.floor(diff / 60000)}分`;
 }
 
-export default function ResearchPhase({ onJudge }: Props) {
+export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: Props) {
   const [brand, setBrand] = useState("");
   const [category, setCategory] = useState("");
   const [modelNumber, setModelNumber] = useState("");
@@ -179,6 +182,24 @@ export default function ResearchPhase({ onJudge }: Props) {
   const [mercariSuggestError, setMercariSuggestError] = useState("");
 
   const sourcingRef = useRef<HTMLDivElement>(null);
+
+  // 履歴から復元：restoreCountが変わったときだけ実行
+  useEffect(() => {
+    if (!restoreValues || restoreCount === 0) return;
+    setBrand(restoreValues.brand);
+    setCategory(restoreValues.category);
+    setModelNumber(restoreValues.modelNumber);
+    setPriceMin(restoreValues.priceMin);
+    setPriceMax(restoreValues.priceMax);
+    setTargetMarginRate(restoreValues.targetMarginRate);
+    // 検索結果・AI結果はクリア
+    setRecommendations([]);
+    setMarketSummary("");
+    setItems([]);
+    setActiveSearchKeyword("");
+    setActiveRecSellPrice(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restoreCount]);
 
   const baseKeyword = [brand, category, modelNumber].filter(Boolean).join(" ").trim();
   const canSearch = brand.trim() !== "";
