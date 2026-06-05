@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "仕入れ判定サポートツール",
+  title: "仕入れ判定サポート",
   description: "メルカリ転売の仕入れ判定を素早く行うためのサポートツール",
 };
 
