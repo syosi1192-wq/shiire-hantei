@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import ResearchPhase from "./components/ResearchPhase";
 import JudgementPhase, { JudgeParams } from "./components/JudgementPhase";
 import HistoryList from "./components/HistoryList";
+import BetaGate from "./components/BetaGate";
 import { HistoryItem } from "./types";
 
 const HISTORY_KEY = "shiire_hantei_history";
@@ -68,6 +69,7 @@ export default function Home() {
   };
 
   return (
+    <BetaGate>
     <div className="min-h-screen bg-black">
       {/* ── ヘッダー：ダーク×ゴールドアクセント ── */}
       <header className="bg-stone-900 border-b-2 border-amber-600 shadow-lg sticky top-0 z-10">
@@ -130,5 +132,6 @@ export default function Home() {
         <p className="mt-1">利益計算はメルカリ手数料10%・入力値をもとにした目安です</p>
       </footer>
     </div>
+    </BetaGate>
   );
 }

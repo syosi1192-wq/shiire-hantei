@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { SearchConditions, YahooAuctionItem, Recommendation } from "../types";
 import { RestoreValues } from "../page";
+import { useAiLimit, AI_DAILY_LIMIT } from "../hooks/useAiLimit";
 import ProductRecommendations from "./ProductRecommendations";
 import ImageSearchPanel from "./ImageSearchPanel";
 
@@ -182,6 +183,7 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
   const [mercariSuggestError, setMercariSuggestError] = useState("");
 
   const sourcingRef = useRef<HTMLDivElement>(null);
+  const { canCall, remaining, consume } = useAiLimit();
 
   // 履歴から復元：restoreCountが変わったときだけ実行
   useEffect(() => {
@@ -232,6 +234,7 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
 
   // ── AI推薦 ──────────────────────────────
   const handleAiRecommend = async () => {
+    if (!consume()) { setRecError(`本日のAI利用上限（${AI_DAILY_LIMIT}回）に達しました。明日またご利用ください。`); return; }
     setRecLoading(true);
     setRecError("");
     setRecommendations([]);
@@ -377,6 +380,7 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
         )
         .join("\n");
     }
+    if (!consume()) { setMercariAnalysisError(`本日のAI利用上限（${AI_DAILY_LIMIT}回）に達しました。明日またご利用ください。`); return; }
     setMercariAnalysisLoading(true);
     setMercariAnalysisError("");
     setMercariAnalysisResult(null);
@@ -401,6 +405,7 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
 
   // ── メルカリ AI 3件自動ピックアップ ──────────────
   const handleMercariSuggest = async () => {
+    if (!consume()) { setMercariSuggestError(`本日のAI利用上限（${AI_DAILY_LIMIT}回）に達しました。明日またご利用ください。`); return; }
     setMercariSuggestLoading(true);
     setMercariSuggestError("");
     try {
@@ -910,6 +915,10 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
             </button>
             <p className="text-xs text-slate-400 text-center -mt-2">
               ※ 品番・モデル名を含め、仕入れ上限額内の商品のみ提案します
+            </p>
+            {/* 本日のAI利用残数 */}
+            <p className={`text-xs text-center font-medium ${remaining <= 5 ? "text-amber-600" : "text-stone-400"}`}>
+              本日のAI利用残り：{remaining} / {AI_DAILY_LIMIT} 回
             </p>
           </>
         )}
