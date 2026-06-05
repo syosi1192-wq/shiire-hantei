@@ -43,7 +43,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-black">
       {/* ── ヘッダー：ダーク×ゴールドアクセント ── */}
       <header className="bg-stone-900 border-b-2 border-amber-600 shadow-lg sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">
