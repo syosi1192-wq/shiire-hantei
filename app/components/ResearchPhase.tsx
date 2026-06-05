@@ -418,12 +418,12 @@ export default function ResearchPhase({ onJudge }: Props) {
   return (
     <div className="space-y-4">
       {/* ── 検索フォーム ── */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-md shadow-stone-200/50 space-y-4">
 
         {/* Step 1 */}
         <div className="flex items-center gap-2">
-          <span className="w-6 h-6 bg-blue-600 text-white rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">1</span>
-          <h2 className="text-sm font-bold text-slate-700">ブランド・カテゴリを入力する</h2>
+          <span className="w-6 h-6 bg-amber-700 text-white rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">1</span>
+          <h2 className="text-sm font-bold text-stone-800">ブランド・カテゴリを入力する</h2>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -435,7 +435,7 @@ export default function ResearchPhase({ onJudge }: Props) {
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               placeholder="例：コーチ、グッチ"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
             />
           </div>
           <div>
@@ -445,7 +445,7 @@ export default function ResearchPhase({ onJudge }: Props) {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="例：バッグ、財布"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
             />
           </div>
           <div className="col-span-2">
@@ -458,7 +458,7 @@ export default function ResearchPhase({ onJudge }: Props) {
               value={modelNumber}
               onChange={(e) => setModelNumber(e.target.value)}
               placeholder="例：F12345"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
             />
           </div>
         </div>
@@ -490,8 +490,8 @@ export default function ResearchPhase({ onJudge }: Props) {
 
             {/* Step 2 */}
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">2</span>
-              <h2 className="text-sm font-bold text-slate-700">メルカリで相場を確認する</h2>
+              <span className="w-6 h-6 bg-stone-800 text-white rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">2</span>
+              <h2 className="text-sm font-bold text-stone-800">メルカリで相場を確認する</h2>
             </div>
             {/* 商品状態フィルター（メルカリ） */}
             <div>
@@ -527,7 +527,7 @@ export default function ResearchPhase({ onJudge }: Props) {
               href={mercariUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-colors"
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-rose-800 hover:bg-rose-900 text-white rounded-xl font-semibold text-sm transition-colors tracking-wide"
             >
               メルカリで「{baseKeyword}」の取引実績を確認 →
             </a>
@@ -628,12 +628,12 @@ export default function ResearchPhase({ onJudge }: Props) {
                         </ol>
                         <p className="text-indigo-600">※ 価格は任意です。商品名だけでも分析できます</p>
                       </div>
-                      {/* AIが3件自動ピックアップ */}
+                      {/* AIが8件自動ピックアップ */}
                       <button
                         type="button"
                         onClick={handleMercariSuggest}
                         disabled={mercariSuggestLoading}
-                        className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-2.5 bg-amber-700 hover:bg-amber-800 disabled:bg-stone-200 disabled:text-stone-400 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
                       >
                         {mercariSuggestLoading ? (
                           <>
@@ -690,7 +690,7 @@ export default function ResearchPhase({ onJudge }: Props) {
                   <button
                     onClick={handleMercariAnalyze}
                     disabled={!canAnalyze || mercariAnalysisLoading}
-                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2.5 bg-stone-800 hover:bg-stone-900 disabled:bg-stone-200 disabled:text-stone-400 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
                   >
                     {mercariAnalysisLoading ? (
                       <>
@@ -773,8 +773,8 @@ export default function ResearchPhase({ onJudge }: Props) {
 
             {/* Step 3 */}
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 bg-blue-600 text-white rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">3</span>
-              <h2 className="text-sm font-bold text-slate-700">メルカリで確認した価格帯を入力</h2>
+              <span className="w-6 h-6 bg-amber-700 text-white rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">3</span>
+              <h2 className="text-sm font-bold text-stone-800">メルカリで確認した価格帯を入力</h2>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -784,7 +784,7 @@ export default function ResearchPhase({ onJudge }: Props) {
                   onChange={(e) => setPriceMin(Number(e.target.value))}
                   placeholder="最小"
                   min={0}
-                  className="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  className="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">円</span>
               </div>
@@ -796,7 +796,7 @@ export default function ResearchPhase({ onJudge }: Props) {
                   onChange={(e) => setPriceMax(Number(e.target.value))}
                   placeholder="最大"
                   min={0}
-                  className="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  className="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">円</span>
               </div>
@@ -822,7 +822,7 @@ export default function ResearchPhase({ onJudge }: Props) {
                   onChange={(e) => setTargetMarginRate(Number(e.target.value))}
                   min={0}
                   max={100}
-                  className="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  className="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
                 />
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">%</span>
               </div>
@@ -832,8 +832,8 @@ export default function ResearchPhase({ onJudge }: Props) {
 
             {/* Step 4 */}
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 bg-purple-600 text-white rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">4</span>
-              <h2 className="text-sm font-bold text-slate-700">AIが仕入れる商品を断定する</h2>
+              <span className="w-6 h-6 bg-stone-900 text-white rounded-full text-xs flex items-center justify-center font-bold flex-shrink-0">4</span>
+              <h2 className="text-sm font-bold text-stone-800">AIが仕入れる商品を断定する</h2>
             </div>
 
             {/* 仕入れ上限額の表示 */}
@@ -876,7 +876,7 @@ export default function ResearchPhase({ onJudge }: Props) {
             <button
               onClick={handleAiRecommend}
               disabled={recLoading}
-              className="w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 tracking-wide"
             >
               {recLoading ? (
                 <>
@@ -1168,8 +1168,8 @@ export default function ResearchPhase({ onJudge }: Props) {
                         disabled={!hasPriceRange}
                         className={`w-full py-2.5 text-xs font-bold rounded-lg transition-colors ${
                           hasPriceRange
-                            ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                            : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                            ? "bg-amber-700 hover:bg-amber-800 text-white"
+                            : "bg-stone-100 text-stone-400 cursor-not-allowed"
                         }`}
                       >
                         {hasPriceRange
@@ -1194,7 +1194,7 @@ export default function ResearchPhase({ onJudge }: Props) {
                       onChange={(e) => setManualPrice(e.target.value)}
                       placeholder="仕入れ予定価格"
                       min={0}
-                      className="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                      className="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">円</span>
                   </div>
@@ -1204,7 +1204,7 @@ export default function ResearchPhase({ onJudge }: Props) {
                       handleJudge(Number(manualPrice), activeSearchKeyword, "");
                     }}
                     disabled={!manualPrice || !hasPriceRange}
-                    className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 bg-stone-900 text-white text-xs font-bold rounded-lg hover:bg-stone-700 disabled:bg-stone-200 disabled:text-stone-400 disabled:cursor-not-allowed transition-colors"
                   >
                     判定
                   </button>
@@ -1222,7 +1222,7 @@ export default function ResearchPhase({ onJudge }: Props) {
       {canSearch && recommendations.length === 0 && !activeSearchKeyword && !recLoading && (
         <button
           onClick={() => searchYahoo(baseKeyword)}
-          className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-colors"
+          className="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-bold text-sm transition-colors tracking-wide"
         >
           🔍 「{baseKeyword}」をヤフオクで今すぐ探す
         </button>

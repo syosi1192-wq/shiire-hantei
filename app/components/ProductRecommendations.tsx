@@ -10,9 +10,9 @@ interface Props {
 }
 
 const DEMAND_STYLE = {
-  高: { badge: "bg-red-100 text-red-700 border-red-200", ring: "ring-red-200" },
-  中: { badge: "bg-yellow-100 text-yellow-700 border-yellow-200", ring: "ring-yellow-200" },
-  低: { badge: "bg-slate-100 text-slate-600 border-slate-200", ring: "ring-slate-200" },
+  高: { badge: "bg-rose-50 text-rose-700 border-rose-200" },
+  中: { badge: "bg-amber-50 text-amber-700 border-amber-200" },
+  低: { badge: "bg-stone-100 text-stone-500 border-stone-200" },
 };
 
 export default function ProductRecommendations({
@@ -24,16 +24,16 @@ export default function ProductRecommendations({
   return (
     <div className="space-y-3">
       {marketSummary && (
-        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
           <span className="text-base flex-shrink-0">📊</span>
-          <p className="text-xs text-blue-700 leading-relaxed">
+          <p className="text-xs text-stone-700 leading-relaxed">
             <span className="font-semibold">市場動向：</span>
             {marketSummary}
           </p>
         </div>
       )}
 
-      <p className="text-xs text-slate-500 font-medium">
+      <p className="text-xs text-stone-500 font-medium tracking-wide">
         AIが断定した仕入れ候補商品（需要順）
       </p>
 
@@ -57,12 +57,12 @@ export default function ProductRecommendations({
             key={i}
             className={`bg-white rounded-2xl overflow-hidden transition-all border-2 ${
               isActive
-                ? "border-emerald-400 shadow-lg shadow-emerald-50"
-                : "border-slate-200 hover:border-slate-300"
+                ? "border-amber-500 shadow-lg shadow-amber-100/60"
+                : "border-stone-200 hover:border-stone-300 hover:shadow-md hover:shadow-stone-200/50"
             }`}
           >
             {isActive && (
-              <div className="bg-emerald-500 text-white text-xs font-bold text-center py-1.5">
+              <div className="bg-amber-700 text-white text-xs font-bold text-center py-1.5 tracking-wide">
                 ✓ この商品をヤフオクで検索中
               </div>
             )}
@@ -72,13 +72,13 @@ export default function ProductRecommendations({
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-bold text-slate-400">#{i + 1}</span>
-                    <h3 className="text-sm font-bold text-slate-800 leading-tight">
+                    <span className="text-xs font-bold text-amber-600">#{i + 1}</span>
+                    <h3 className="text-sm font-bold text-stone-800 leading-tight">
                       {rec.name}
                     </h3>
                   </div>
                   {rec.modelNumber && (
-                    <p className="text-xs text-slate-400 font-mono">
+                    <p className="text-xs text-stone-400 font-mono">
                       品番：{rec.modelNumber}
                     </p>
                   )}
@@ -91,41 +91,41 @@ export default function ProductRecommendations({
               </div>
 
               {/* Reason */}
-              <p className="text-xs text-slate-600 leading-relaxed mb-3 bg-slate-50 rounded-lg px-3 py-2">
+              <p className="text-xs text-stone-600 leading-relaxed mb-3 bg-stone-50 rounded-lg px-3 py-2 border border-stone-100">
                 💡 {rec.reason}
               </p>
 
               {/* Price estimates */}
               <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-slate-50 rounded-xl px-2 py-2 text-center">
-                  <p className="text-xs text-slate-400 mb-0.5">メルカリ売値</p>
-                  <p className="text-sm font-bold text-slate-700">
+                <div className="bg-stone-50 rounded-xl px-2 py-2 text-center border border-stone-100">
+                  <p className="text-xs text-stone-400 mb-0.5">メルカリ売値</p>
+                  <p className="text-sm font-bold text-stone-700">
                     ¥{rec.estimatedSellPrice.toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-emerald-50 rounded-xl px-2 py-2 text-center">
-                  <p className="text-xs text-emerald-600 mb-0.5">目標仕入れ</p>
-                  <p className="text-sm font-bold text-emerald-700">
+                <div className="bg-amber-50 rounded-xl px-2 py-2 text-center border border-amber-100">
+                  <p className="text-xs text-amber-700 mb-0.5">目標仕入れ</p>
+                  <p className="text-sm font-bold text-amber-800">
                     ¥{rec.purchaseTargetPrice.toLocaleString()}
                   </p>
                 </div>
                 <div
-                  className={`rounded-xl px-2 py-2 text-center ${
+                  className={`rounded-xl px-2 py-2 text-center border ${
                     grossMargin >= 20
-                      ? "bg-blue-50"
+                      ? "bg-emerald-50 border-emerald-100"
                       : grossMargin >= 10
-                      ? "bg-yellow-50"
-                      : "bg-red-50"
+                      ? "bg-amber-50 border-amber-100"
+                      : "bg-rose-50 border-rose-100"
                   }`}
                 >
-                  <p className="text-xs text-slate-500 mb-0.5">概算利益率</p>
+                  <p className="text-xs text-stone-500 mb-0.5">概算利益率</p>
                   <p
                     className={`text-sm font-bold ${
                       grossMargin >= 20
-                        ? "text-blue-700"
+                        ? "text-emerald-700"
                         : grossMargin >= 10
-                        ? "text-yellow-700"
-                        : "text-red-600"
+                        ? "text-amber-700"
+                        : "text-rose-600"
                     }`}
                   >
                     {grossMargin}%
@@ -136,18 +136,18 @@ export default function ProductRecommendations({
               {/* Tips */}
               {rec.tips && (
                 <div className="flex items-start gap-1.5 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-3">
-                  <span className="text-amber-500 text-sm flex-shrink-0">⚠</span>
-                  <p className="text-xs text-amber-700 leading-relaxed">{rec.tips}</p>
+                  <span className="text-amber-600 text-sm flex-shrink-0">⚠</span>
+                  <p className="text-xs text-amber-800 leading-relaxed">{rec.tips}</p>
                 </div>
               )}
 
               {/* Action button */}
               <button
                 onClick={() => onSelect(rec)}
-                className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${
+                className={`w-full py-3 rounded-xl font-bold text-sm transition-colors tracking-wide ${
                   isActive
-                    ? "bg-emerald-600 text-white cursor-default"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    ? "bg-amber-700 text-white cursor-default"
+                    : "bg-stone-900 hover:bg-stone-800 text-white"
                 }`}
               >
                 {isActive

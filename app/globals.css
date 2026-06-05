@@ -3,3 +3,9 @@
 body {
   font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
 }
+
+/* 高級感のある明朝体（見出し用） */
+.font-mincho {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "MS Mincho", serif;
+  letter-spacing: 0.08em;
+}

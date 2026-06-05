@@ -281,7 +281,7 @@ export default function JudgementPhase({
 
       <button
         onClick={onBack}
-        className="w-full py-3 border border-slate-300 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-100 transition-colors"
+        className="w-full py-3 border-2 border-stone-300 text-stone-600 rounded-xl font-semibold text-sm hover:bg-stone-100 hover:border-stone-400 transition-colors tracking-wide"
       >
         ← 別の商品を探す
       </button>
