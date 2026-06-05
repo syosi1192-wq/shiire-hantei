@@ -1146,22 +1146,19 @@ export default function ResearchPhase({ onJudge }: Props) {
                               </>
                             )}
                           </button>
-                          {/* Google Lens 画像検索 */}
-                          {item.thumbnailUrl && (
-                            <a
-                              href={`https://lens.google.com/uploadbyurl?url=${encodeURIComponent(item.thumbnailUrl)}&hl=ja`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex items-center gap-0.5 text-xs text-blue-500 hover:text-blue-700 hover:underline"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              画像で商品検索
-                            </a>
-                          )}
+                          {/* Google テキスト検索（Yahoo画像はホットリンク禁止のためLens uploadbyurlは使用不可） */}
+                          <a
+                            href={`https://www.google.com/search?q=${encodeURIComponent(cleanTitleForMercari(item.title))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-0.5 text-xs text-blue-500 hover:text-blue-700 hover:underline"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            Googleで商品検索
+                          </a>
                         </div>
                       </div>
                     </a>
