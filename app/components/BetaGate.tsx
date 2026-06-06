@@ -6,37 +6,102 @@ import { useState, useEffect } from "react";
 // 未設定の場合は "BETA2025" が使われる
 const BETA_CODE = process.env.NEXT_PUBLIC_BETA_CODE ?? "BETA2025";
 const STORAGE_KEY = "beta_access_v1";
+const FIRST_ACCESS_KEY = "beta_first_access_v1";
+const BETA_DAYS = 30; // β版利用期間（日数）
+
+type GateState = "loading" | "expired" | "granted" | "locked";
+
+function checkAccess(): GateState {
+  if (localStorage.getItem(STORAGE_KEY) !== "granted") return "locked";
+  const firstAccess = localStorage.getItem(FIRST_ACCESS_KEY);
+  if (!firstAccess) return "locked";
+  const daysPassed =
+    (Date.now() - new Date(firstAccess).getTime()) / (1000 * 60 * 60 * 24);
+  if (daysPassed > BETA_DAYS) return "expired";
+  return "granted";
+}
+
+function daysRemaining(): number {
+  const firstAccess = localStorage.getItem(FIRST_ACCESS_KEY);
+  if (!firstAccess) return 0;
+  const passed =
+    (Date.now() - new Date(firstAccess).getTime()) / (1000 * 60 * 60 * 24);
+  return Math.max(0, Math.ceil(BETA_DAYS - passed));
+}
 
 interface Props {
   children: React.ReactNode;
 }
 
 export default function BetaGate({ children }: Props) {
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [state, setState] = useState<GateState>("loading");
+  const [remaining, setRemaining] = useState(0);
   const [inputCode, setInputCode] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setHasAccess(localStorage.getItem(STORAGE_KEY) === "granted");
+    const s = checkAccess();
+    setState(s);
+    if (s === "granted") setRemaining(daysRemaining());
   }, []);
 
   const handleSubmit = () => {
     if (inputCode.trim().toUpperCase() === BETA_CODE.toUpperCase()) {
+      // 初回アクセス日時を記録
+      if (!localStorage.getItem(FIRST_ACCESS_KEY)) {
+        localStorage.setItem(FIRST_ACCESS_KEY, new Date().toISOString());
+      }
       localStorage.setItem(STORAGE_KEY, "granted");
-      setHasAccess(true);
+      setRemaining(daysRemaining());
+      setState("granted");
     } else {
       setError("アクセスコードが違います。もう一度お試しください。");
       setInputCode("");
     }
   };
 
-  // hydration中は何も表示しない
-  if (hasAccess === null) return null;
+  // hydration中
+  if (state === "loading") return null;
 
-  // アクセス済み → アプリをそのまま表示
-  if (hasAccess) return <>{children}</>;
+  // アクセス済み → アプリを表示（残り日数をヘッダー下に小さく表示）
+  if (state === "granted") {
+    return (
+      <>
+        {remaining <= 7 && (
+          <div className="bg-amber-900/80 text-amber-200 text-xs text-center py-1.5 tracking-wide">
+            ⚠️ β版利用期限まで残り <strong>{remaining}日</strong> です
+          </div>
+        )}
+        {children}
+      </>
+    );
+  }
 
-  // 未アクセス → アクセスコード入力画面
+  // 期限切れ画面
+  if (state === "expired") {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6">
+        <div className="w-full max-w-sm text-center space-y-4">
+          <h1 className="text-2xl font-bold text-white font-mincho tracking-widest">
+            仕入れ判定サポート
+          </h1>
+          <div className="bg-stone-900 border border-stone-700 rounded-2xl p-6 space-y-3">
+            <p className="text-3xl">🔒</p>
+            <p className="text-white font-bold text-base">β版利用期間が終了しました</p>
+            <p className="text-stone-400 text-xs leading-relaxed">
+              30日間のβ版モニター期間が終了しました。<br />
+              引き続きご利用の場合は、正式版のリリースをお待ちください。
+            </p>
+            <p className="text-amber-400/70 text-xs">
+              ご参加いただきありがとうございました。
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // アクセスコード入力画面
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
