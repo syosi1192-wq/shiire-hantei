@@ -76,3 +76,18 @@ export interface Recommendation {
   searchKeyword: string;
   tips: string;
 }
+
+export type MatchLevel = "高い" | "中程度" | "低い";
+export type MatchVerdict = "有望" | "要確認" | "非推奨";
+
+export interface PreciseMatchResult {
+  imageMatch: { level: MatchLevel; note: string };
+  nameConsistency: { ok: boolean; note: string };
+  profit: {
+    maxPurchase: number;
+    estimatedProfit: number | null;
+    profitable: boolean | null;
+    refSellPrice: number;
+  };
+  verdict: MatchVerdict;
+}

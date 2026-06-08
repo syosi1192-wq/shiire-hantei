@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { SearchConditions, YahooAuctionItem, Recommendation } from "../types";
+import { SearchConditions, YahooAuctionItem, Recommendation, PreciseMatchResult } from "../types";
 import { RestoreValues } from "../page";
 import { useAiLimit, AI_DAILY_LIMIT } from "../hooks/useAiLimit";
 import ProductRecommendations from "./ProductRecommendations";
@@ -30,6 +30,13 @@ interface MercariAnalysisResult {
   topProducts: MercariTopProduct[];
   summary: string;
   bestBuyTarget: string;
+}
+
+/** AI精密マッチングの照合対象（メルカリ売れ筋分析やAI推薦から引き継ぐ商品情報） */
+interface ActiveReference {
+  name: string;
+  modelNumber: string;
+  description: string;
 }
 
 interface Props {
@@ -163,8 +170,19 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
   // メルカリ画像キーワード精密化（Vision）
   const [refiningSet, setRefiningSet] = useState<Set<string>>(new Set());
 
+  // メルカリ比較用モーダル（ヤフオク商品の画像を見ながら検索結果と見比べるため）
+  const [mercariCompareItem, setMercariCompareItem] = useState<YahooAuctionItem | null>(null);
+
   // AI推薦商品の推定売値（ヤフオク検索の仕入れ上限計算に使用）
   const [activeRecSellPrice, setActiveRecSellPrice] = useState(0);
+
+  // AI精密マッチングの照合対象（AI推薦・売れ筋分析の選択商品から引き継ぐ）
+  const [activeReference, setActiveReference] = useState<ActiveReference | null>(null);
+
+  // AI精密マッチング結果・状態（候補商品ごと）
+  const [preciseMatchResults, setPreciseMatchResults] = useState<Record<string, PreciseMatchResult>>({});
+  const [preciseMatchLoading, setPreciseMatchLoading] = useState<Set<string>>(new Set());
+  const [preciseMatchErrors, setPreciseMatchErrors] = useState<Record<string, string>>({});
 
   // まとめ商品除外フラグ
   const [excludeBundle, setExcludeBundle] = useState(false);
@@ -264,13 +282,24 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
 
   // ── ヤフオク検索 ─────────────────────────
   // recSellPrice: AI推薦商品の推定売値。渡されればその商品専用の仕入れ上限を計算する
-  const searchYahoo = async (keyword: string, conditionOverride?: string, recSellPrice?: number) => {
+  // reference: AI精密マッチングで使う照合対象（商品名・型番・特徴）。渡されれば更新する
+  const searchYahoo = async (
+    keyword: string,
+    conditionOverride?: string,
+    recSellPrice?: number,
+    reference?: ActiveReference | null
+  ) => {
     const cond = conditionOverride !== undefined ? conditionOverride : yahooCondition;
 
     // AI推薦のsellPriceが渡された → stateを更新して使用
     // 渡されなかった → 現在のstateを引き継ぐ（状態フィルター切り替え時など）
     const usedSellPrice = recSellPrice !== undefined ? recSellPrice : activeRecSellPrice;
     if (recSellPrice !== undefined) setActiveRecSellPrice(recSellPrice);
+    if (reference !== undefined) setActiveReference(reference);
+
+    // 新しい検索を行うので、過去の精密マッチング結果はクリアする
+    setPreciseMatchResults({});
+    setPreciseMatchErrors({});
 
     // 実効的な仕入れ上限: AI推薦のsellPriceがあればそれを優先、なければStep3のグローバル値
     const effectiveMaxPurchase = usedSellPrice > 0
@@ -357,6 +386,66 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
       else window.open(fallbackUrl, "_blank");
     } finally {
       setRefiningSet((prev) => {
+        const next = new Set(prev);
+        next.delete(item.auctionId);
+        return next;
+      });
+    }
+  };
+
+  // ── AI精密マッチング（画像一致度・名称整合性・利益を一括判定）──
+  const handlePreciseMatch = async (item: YahooAuctionItem) => {
+    if (preciseMatchLoading.has(item.auctionId)) return;
+
+    if (!item.thumbnailUrl) {
+      setPreciseMatchErrors((prev) => ({
+        ...prev,
+        [item.auctionId]: "この商品には画像がないため、精密マッチングできません",
+      }));
+      return;
+    }
+    if (!consume()) {
+      setPreciseMatchErrors((prev) => ({
+        ...prev,
+        [item.auctionId]: `本日のAI利用上限（${AI_DAILY_LIMIT}回）に達しました。明日またご利用ください。`,
+      }));
+      return;
+    }
+
+    setPreciseMatchLoading((prev) => new Set([...prev, item.auctionId]));
+    setPreciseMatchErrors((prev) => {
+      const next = { ...prev };
+      delete next[item.auctionId];
+      return next;
+    });
+
+    try {
+      const r = await fetch("/api/precise-match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: item.thumbnailUrl,
+          title: item.title,
+          price: item.currentPrice,
+          brand,
+          category,
+          modelNumber,
+          referenceName: activeReference?.name ?? "",
+          referenceDescription: activeReference?.description ?? "",
+          mercariPriceMin: priceMin,
+          mercariPriceMax: priceMax,
+        }),
+      });
+      const data = await r.json();
+      if (data.error) {
+        setPreciseMatchErrors((prev) => ({ ...prev, [item.auctionId]: data.error }));
+      } else {
+        setPreciseMatchResults((prev) => ({ ...prev, [item.auctionId]: data }));
+      }
+    } catch {
+      setPreciseMatchErrors((prev) => ({ ...prev, [item.auctionId]: "通信エラーが発生しました" }));
+    } finally {
+      setPreciseMatchLoading((prev) => {
         const next = new Set(prev);
         next.delete(item.auctionId);
         return next;
@@ -782,7 +871,13 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
                           <p className="text-xs text-slate-600 leading-relaxed">{product.reason}</p>
 
                           <button
-                            onClick={() => searchYahoo(product.searchKeyword)}
+                            onClick={() =>
+                              searchYahoo(product.searchKeyword, undefined, undefined, {
+                                name: product.name,
+                                modelNumber: "",
+                                description: product.reason,
+                              })
+                            }
                             className="w-full py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
                           >
                             🔍 「{product.searchKeyword}」でヤフオクを検索
@@ -945,7 +1040,13 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
           recommendations={recommendations}
           marketSummary={marketSummary}
           activeKeyword={activeSearchKeyword}
-          onSelect={(rec) => searchYahoo(rec.searchKeyword, undefined, rec.estimatedSellPrice)}
+          onSelect={(rec) =>
+            searchYahoo(rec.searchKeyword, undefined, rec.estimatedSellPrice, {
+              name: rec.name,
+              modelNumber: rec.modelNumber,
+              description: rec.reason,
+            })
+          }
         />
       )}
 
@@ -1155,40 +1256,121 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
                           })()}
                         </div>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          {/* メルカリ売値確認（写真AI解析で視覚的類似品に絞る） */}
+                          {/* メルカリ売値確認（比較用モーダルを開く） */}
                           <button
                             type="button"
-                            onClick={(e) => handleMercariVisualSearch(e, item)}
-                            disabled={refiningSet.has(item.auctionId)}
-                            className="flex items-center gap-0.5 text-xs text-red-500 hover:text-red-700 hover:underline disabled:text-slate-400 disabled:cursor-wait"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setMercariCompareItem(item);
+                            }}
+                            className="flex items-center gap-0.5 text-xs text-red-500 hover:text-red-700 hover:underline"
                           >
-                            {refiningSet.has(item.auctionId) ? (
-                              <>
-                                <span className="w-3 h-3 border border-slate-300 border-t-red-400 rounded-full animate-spin inline-block" />
-                                <span className="ml-0.5">写真解析中...</span>
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                                メルカリで売値確認
-                              </>
-                            )}
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            メルカリで売値確認
                           </button>
-                          {/* Google テキスト検索（Yahoo画像はホットリンク禁止のためLens uploadbyurlは使用不可） */}
-                          <a
-                            href={`https://www.google.com/search?q=${encodeURIComponent(cleanTitleForMercari(item.title))}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
+                          {/* Google Lens 画像検索（画像プロキシ経由でホットリンク制限を回避） */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (item.thumbnailUrl) {
+                                const proxiedUrl = `${window.location.origin}/api/image-proxy?url=${encodeURIComponent(item.thumbnailUrl)}`;
+                                const lensUrl = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(proxiedUrl)}`;
+                                window.open(lensUrl, "_blank");
+                              } else {
+                                window.open(
+                                  `https://www.google.com/search?q=${encodeURIComponent(cleanTitleForMercari(item.title))}`,
+                                  "_blank"
+                                );
+                              }
+                            }}
                             className="flex items-center gap-0.5 text-xs text-blue-500 hover:text-blue-700 hover:underline"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
-                            Googleで商品検索
-                          </a>
+                            Google Lens で画像検索
+                          </button>
+                        </div>
+
+                        {/* ── AI精密マッチング（画像一致度・名称整合性・利益を一括判定） ── */}
+                        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handlePreciseMatch(item);
+                            }}
+                            disabled={preciseMatchLoading.has(item.auctionId)}
+                            className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline disabled:text-slate-400 disabled:cursor-wait"
+                          >
+                            {preciseMatchLoading.has(item.auctionId) ? (
+                              <>
+                                <span className="w-3 h-3 border border-slate-300 border-t-indigo-400 rounded-full animate-spin inline-block" />
+                                <span className="ml-0.5">AI精密マッチング中...</span>
+                              </>
+                            ) : (
+                              <>🎯 AIで精密マッチングする</>
+                            )}
+                          </button>
+
+                          {preciseMatchErrors[item.auctionId] && (
+                            <p className="text-xs text-red-600 mt-1.5">⚠️ {preciseMatchErrors[item.auctionId]}</p>
+                          )}
+
+                          {preciseMatchResults[item.auctionId] && (() => {
+                            const result = preciseMatchResults[item.auctionId];
+                            const verdictStyle =
+                              result.verdict === "有望"
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                                : result.verdict === "非推奨"
+                                ? "bg-red-50 border-red-200 text-red-700"
+                                : "bg-yellow-50 border-yellow-200 text-yellow-700";
+                            const verdictIcon =
+                              result.verdict === "有望" ? "⭐️" : result.verdict === "非推奨" ? "🚫" : "🤔";
+                            const verdictLabel =
+                              result.verdict === "有望"
+                                ? "仕入れ候補として有望"
+                                : result.verdict === "非推奨"
+                                ? "見送りを推奨"
+                                : "要確認（内容を見て判断してください）";
+                            return (
+                              <div className={`mt-2 rounded-lg border px-3 py-2.5 text-xs space-y-1.5 ${verdictStyle}`}>
+                                <p className="font-bold">
+                                  {verdictIcon} 総合判定：{verdictLabel}
+                                </p>
+                                <p>
+                                  {result.imageMatch.level === "高い" ? "✅" : result.imageMatch.level === "中程度" ? "⚠️" : "❌"}
+                                  {" "}画像一致度：{result.imageMatch.level}
+                                  <span className="block text-[11px] opacity-80 ml-5">{result.imageMatch.note}</span>
+                                </p>
+                                <p>
+                                  {result.nameConsistency.ok ? "✅" : "❌"} 名称・型番の整合性：
+                                  {result.nameConsistency.ok ? "問題なし" : "要注意"}
+                                  <span className="block text-[11px] opacity-80 ml-5">{result.nameConsistency.note}</span>
+                                </p>
+                                {result.profit.estimatedProfit !== null ? (
+                                  <p>
+                                    {result.profit.profitable ? "✅" : "❌"} 利益見込み：
+                                    <span className="font-bold">
+                                      {result.profit.estimatedProfit >= 0 ? "+" : ""}
+                                      ¥{result.profit.estimatedProfit.toLocaleString()}
+                                    </span>
+                                    <span className="block text-[11px] opacity-80 ml-5">
+                                      メルカリ推定売値 ¥{result.profit.refSellPrice.toLocaleString()}（STEP3の価格帯の中央値）を基準に計算
+                                    </span>
+                                  </p>
+                                ) : (
+                                  <p className="opacity-70">※ STEP3でメルカリ価格帯を入力すると、利益判定も行われます</p>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     </a>
@@ -1251,7 +1433,7 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
       {/* AI未使用時：直接ヤフオク検索 */}
       {canSearch && recommendations.length === 0 && !activeSearchKeyword && !recLoading && (
         <button
-          onClick={() => searchYahoo(baseKeyword)}
+          onClick={() => searchYahoo(baseKeyword, undefined, undefined, null)}
           className="w-full py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-bold text-sm transition-colors tracking-wide"
         >
           🔍 「{baseKeyword}」をヤフオクで今すぐ探す
@@ -1281,17 +1463,92 @@ export default function ResearchPhase({ onJudge, restoreValues, restoreCount }: 
           setMercariConditions([]);
           setYahooCondition("");
           setActiveRecSellPrice(0);
+          setActiveReference(null);
+          setPreciseMatchResults({});
+          setPreciseMatchLoading(new Set());
+          setPreciseMatchErrors({});
           setMercariAnalysisOpen(false);
           setMercariInputMode("paste");
           setMercariPasteText("");
           setMercariManualEntries(Array.from({ length: 8 }, () => ({ name: "", price: "" })));
           setMercariAnalysisResult(null);
           setMercariAnalysisError("");
+          setMercariCompareItem(null);
         }}
         className="w-full py-3 border-2 border-slate-200 text-slate-400 rounded-xl font-semibold text-sm hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-colors"
       >
         🔄 入力内容をすべてリセット
       </button>
+
+      {/* ── メルカリ比較用モーダル ── */}
+      {/* メルカリには画像検索がないため、ヤフオク商品の画像を見ながら検索結果と見比べられるようにする */}
+      {mercariCompareItem && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setMercariCompareItem(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-stone-800">🔍 メルカリで売値を確認する</h3>
+              <button
+                type="button"
+                onClick={() => setMercariCompareItem(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {mercariCompareItem.thumbnailUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={mercariCompareItem.thumbnailUrl}
+                alt={mercariCompareItem.title}
+                className="w-full h-48 object-contain rounded-xl bg-slate-50 border border-slate-100"
+              />
+            ) : (
+              <div className="w-full h-48 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-300 text-xs">
+                画像なし
+              </div>
+            )}
+            <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{mercariCompareItem.title}</p>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-amber-800 space-y-1.5">
+              <p className="font-semibold">📋 比較のポイント</p>
+              <p>
+                メルカリの検索結果は、上の<strong>画像と「色・柄・デザイン・形」が似ている商品</strong>を探して、その販売価格を参考にしてください。
+              </p>
+              <p className="text-amber-600">
+                ※ メルカリには画像検索機能がないため、表示される商品は完全には一致しません。この画像を覚えておいてから、検索結果の商品と見比べてご確認ください。
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                if (mercariCompareItem) handleMercariVisualSearch(e, mercariCompareItem);
+              }}
+              disabled={refiningSet.has(mercariCompareItem.auctionId)}
+              className="w-full py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-stone-300 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              {refiningSet.has(mercariCompareItem.auctionId) ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  画像を解析中...
+                </>
+              ) : (
+                "メルカリで検索結果を開く →"
+              )}
+            </button>
+            <p className="text-xs text-slate-400 text-center">
+              ※ この画面は開いたままにできます。別タブの検索結果と見比べながらご確認ください
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
